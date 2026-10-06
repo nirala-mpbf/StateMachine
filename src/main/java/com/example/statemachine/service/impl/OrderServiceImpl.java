@@ -2,6 +2,7 @@ package com.example.statemachine.service.impl;
 
 import com.example.statemachine.dto.CreateOrderRequest;
 import com.example.statemachine.model.Order;
+import com.example.statemachine.repository.OrderRepository;
 import com.example.statemachine.service.OrderService;
 import com.example.statemachine.statemachine.event.OrderEvent;
 import com.example.statemachine.statemachine.state.OrderState;
@@ -17,60 +18,46 @@ import java.util.concurrent.atomic.AtomicLong;
 @Service
 public class OrderServiceImpl implements OrderService {
 
-
     private final StateMachineFactory<OrderState, OrderEvent> stateMachineFactory;
 
-    private final Map<Long, Order> orders = new ConcurrentHashMap<>();
+    private final OrderRepository orderRepository;
 
-    private final AtomicLong orderIdGenerator = new AtomicLong(100);
+    public OrderServiceImpl(
+            StateMachineFactory<OrderState, OrderEvent> stateMachineFactory,
+            OrderRepository orderRepository) {
 
-    public OrderServiceImpl(StateMachineFactory<OrderState, OrderEvent> stateMachineFactory) {
         this.stateMachineFactory = stateMachineFactory;
+        this.orderRepository = orderRepository;
     }
 
-    @Override
     public Order createOrder(CreateOrderRequest request) {
+        Order order = new Order(null, request.product(), request.quantity() );
+        Long orderId = orderRepository.save(order);
 
-        Long orderId = orderIdGenerator.incrementAndGet();
-        Order order = new Order(
-                orderId,
-                request.product(),
-                request.quantity()
-        );
-
-        orders.put(orderId, order);
-        return order;
+        return orderRepository.findById(orderId);
     }
 
-    @Override
     public Order getOrder(Long orderId) {
-        Order order = orders.get(orderId);
-        if (order == null) {
-            throw new RuntimeException("Order not found: " + orderId);
-        }
-        return order;
+        return orderRepository.findById(orderId);
     }
 
-    @Override
     public Order processEvent(Long orderId, OrderEvent event) {
 
-        Order order = getOrder(orderId);
-        StateMachine<OrderState, OrderEvent> stateMachine =  stateMachineFactory.getStateMachine("ORDER_" + orderId);
-
+        Order order = orderRepository.findById(orderId);
+        StateMachine<OrderState, OrderEvent> stateMachine = stateMachineFactory.getStateMachine("ORDER_" + orderId);
         stateMachine.stop();
 
         stateMachine.getStateMachineAccessor()
                 .doWithAllRegions(accessor ->
                         accessor.resetStateMachine(
                                 new DefaultStateMachineContext<>(
-                                    order.getState(),
-                                    null,
-                                    null,
-                                    null
+                                        order.getState(),
+                                        null,
+                                        null,
+                                        null
                                 )
                         )
                 );
-
         stateMachine.start();
 
         boolean accepted = stateMachine.sendEvent(event);
@@ -80,10 +67,8 @@ public class OrderServiceImpl implements OrderService {
         }
 
         OrderState newState = stateMachine.getState().getId();
-        order.setState(newState);
+        orderRepository.updateState(orderId, newState);
 
-        System.out.println("StateMachine current state: " + stateMachine.getState().getId());
-
-        return order;
+        return orderRepository.findById(orderId);
     }
 }
