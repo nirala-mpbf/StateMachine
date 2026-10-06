@@ -6,6 +6,8 @@ import com.example.statemachine.statemachine.state.OrderState;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 public class OrderRepository {
 
@@ -34,7 +36,7 @@ public class OrderRepository {
         );
     }
 
-    public Order findById(Long orderId) {
+    public Optional<Order> findById(Long orderId)     {
 
         String sql = """
                 SELECT id, product, quantity, state
@@ -42,26 +44,16 @@ public class OrderRepository {
                 WHERE id = ?
                 """;
 
-        return jdbcTemplate.queryForObject(
-                sql,
-                (rs, rowNum) -> {
-
+        return jdbcTemplate.query(sql, (rs, rowNum) -> {
                     Order order = new Order(
                             rs.getLong("id"),
                             rs.getString("product"),
                             rs.getInt("quantity")
                     );
-
-                    order.setState(
-                            OrderState.valueOf(
-                                    rs.getString("state")
-                            )
-                    );
-
+                    order.setState(OrderState.valueOf(rs.getString("state")));
                     return order;
-                },
-                orderId
-        );
+                },orderId)
+                .stream().findFirst();
     }
 
     public void updateState(

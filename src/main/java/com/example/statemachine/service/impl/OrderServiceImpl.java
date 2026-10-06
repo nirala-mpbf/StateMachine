@@ -1,6 +1,8 @@
 package com.example.statemachine.service.impl;
 
 import com.example.statemachine.dto.CreateOrderRequest;
+import com.example.statemachine.exception.InvalidOrderTransitionException;
+import com.example.statemachine.exception.NotFoundException;
 import com.example.statemachine.model.Order;
 import com.example.statemachine.repository.OrderRepository;
 import com.example.statemachine.service.OrderService;
@@ -34,16 +36,17 @@ public class OrderServiceImpl implements OrderService {
         Order order = new Order(null, request.product(), request.quantity() );
         Long orderId = orderRepository.save(order);
 
-        return orderRepository.findById(orderId);
+        return getOrder(orderId);
     }
 
     public Order getOrder(Long orderId) {
-        return orderRepository.findById(orderId);
+        return orderRepository.findById(orderId)
+                .orElseThrow(() -> new NotFoundException("Order not found: " + orderId));
     }
 
     public Order processEvent(Long orderId, OrderEvent event) {
 
-        Order order = orderRepository.findById(orderId);
+        Order order = getOrder(orderId);
         StateMachine<OrderState, OrderEvent> stateMachine = stateMachineFactory.getStateMachine("ORDER_" + orderId);
         stateMachine.stop();
 
@@ -63,12 +66,15 @@ public class OrderServiceImpl implements OrderService {
         boolean accepted = stateMachine.sendEvent(event);
 
         if (!accepted) {
-            throw new IllegalStateException("Event " + event + " is not allowed for order " + orderId + " in state " + order.getState());
+            throw new InvalidOrderTransitionException(
+                    "Event " + event +
+                    " is not allowed for order " + orderId +
+                    " in state " + order.getState()
+            );
         }
 
         OrderState newState = stateMachine.getState().getId();
         orderRepository.updateState(orderId, newState);
-
-        return orderRepository.findById(orderId);
+        return getOrder(orderId);
     }
 }
