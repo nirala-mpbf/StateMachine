@@ -28,12 +28,8 @@ public class OrderController {
         return orderService.getOrder(orderId);
     }
 
-    @PostMapping("/{orderId}/events")
+    @PostMapping("/{orderId}")
     public Order processEvent( @PathVariable Long orderId, @RequestBody OrderEventRequest request) {
-
-        return orderService.processEvent(
-                orderId,
-                request.event()
-        );
+        return orderService.processEvent(orderId, request.event());
     }
 }

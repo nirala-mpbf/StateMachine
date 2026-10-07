@@ -3,7 +3,6 @@ package com.example.statemachine.statemachine.config;
 import com.example.statemachine.statemachine.event.OrderEvent;
 import com.example.statemachine.statemachine.state.OrderState;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.statemachine.config.EnableStateMachine;
 import org.springframework.statemachine.config.EnableStateMachineFactory;
 import org.springframework.statemachine.config.EnumStateMachineConfigurerAdapter;
 import org.springframework.statemachine.config.builders.StateMachineStateConfigurer;
@@ -18,13 +17,11 @@ public class OrderStateMachineConfig
         extends EnumStateMachineConfigurerAdapter<OrderState, OrderEvent> {
 
     @Override
-    public void configure(StateMachineStateConfigurer<OrderState, OrderEvent> states)
-            throws Exception {
-
+    public void configure(StateMachineStateConfigurer<OrderState, OrderEvent> states) throws Exception {
         states
-                .withStates()
-                .initial(OrderState.CREATED)
-                .states(EnumSet.allOf(OrderState.class));
+            .withStates()
+            .initial(OrderState.CREATED)
+            .states(EnumSet.allOf(OrderState.class));
     }
 
     @Override

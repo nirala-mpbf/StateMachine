@@ -20,12 +20,12 @@ public class OrderRepository {
     public Long save(Order order) {
 
         String sql = """
-            INSERT INTO orders
-                (product, quantity, state)
-            VALUES
-                (?, ?, ?)
-            RETURNING id
-            """;
+                INSERT INTO orders
+                    (product, quantity, state)
+                VALUES
+                    (?, ?, ?)
+                RETURNING id
+                """;
 
         return jdbcTemplate.queryForObject(
                 sql,
@@ -36,7 +36,7 @@ public class OrderRepository {
         );
     }
 
-    public Optional<Order> findById(Long orderId)     {
+    public Optional<Order> findById(Long orderId) {
 
         String sql = """
                 SELECT id, product, quantity, state
@@ -52,7 +52,7 @@ public class OrderRepository {
                     );
                     order.setState(OrderState.valueOf(rs.getString("state")));
                     return order;
-                },orderId)
+                }, orderId)
                 .stream().findFirst();
     }
 

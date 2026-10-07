@@ -1,8 +1,20 @@
 package com.example.statemachine.exception;
 
-public class NotFoundException extends RuntimeException {
+import org.springframework.http.HttpStatus;
 
-    public NotFoundException(String msg) {
-        super(msg);
+public class NotFoundException extends ApiException {
+
+    public NotFoundException(String message) {
+        super(message);
+    }
+
+    @Override
+    public HttpStatus status() {
+        return HttpStatus.NOT_FOUND;
+    }
+
+    @Override
+    public String title() {
+        return "Resource Not Found";
     }
 }
